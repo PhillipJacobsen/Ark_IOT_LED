@@ -1,6 +1,5 @@
 /********************************************************************************
-    Proof of Concept Vending Maching Project
-	This projects illustrates a vending machine that accepts Ark Cryptocurrency (or a forked bridgechain) for payment.
+    Simple demo project that allows control of RGB LEDS via Ark BridgeChain Smartbridge text
 
     Ark_IOT_LED.ino
     2019 @phillipjacobsen
@@ -15,20 +14,10 @@
     Adafruit NeoPixels
 
   Description of the current program flow.  status/debug info is also regularly sent to serial terminal
-  1. configure peripherals
-  -setup wifi and display connection status and IP address on TFT Screen
-  -setup time sync with NTP server and display current time
-  -check to see if Ark node is synced and display status
-  2. search through all received transactions on wallet. Wallet address is displayed
-    -"searching wallet + page#" will be displayed. text will toggle between red/white every received transaction
-  3. # of transactions in wallet will be displayed
-  4. User Interface with 3 buttons are displayed(only 1 button currently functions("M&M").
-  5. When user selects M&M's a QRcode is displayed along with a timeout displayed.
-  4. QR code includes price, address and Vendor field = "ArkVend_(random number)" when scanned by Ark mobile wallet.
-  5. wallet waits for transaction with vendor field to be received.
-  6. If payment is received then it will indicated success and display in green text "Payment: ArkVend_(random_number)"
-    if incorrect payment is received then received transaction will be ignored.
-  7. Back to Step 4
+
+
+
+
 
 ********************************************************************************/
 // conditional assembly
@@ -37,24 +26,12 @@
 
 #define ARDUINOJSON_USE_LONG_LONG 1     //required for compatiblity between Telegram Library and ArkCrypto library.
 
-//#define RUN_TELEGRAM_CORE0  //define this to run Telegram interface as a task on Core0. Normally the Arduino application runs on Core1 and the WiFi stack on Core1.
-
 /********************************************************************************
                Electronic Hardware Requirements and Pin Connections
     ESP32 Adafruit Huzzah
       Source: https://www.adafruit.com/product/3405
       https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 
-    TFT FeatherWing 2.4" 320x240 Touchscreen
-      Source: https://www.adafruit.com/product/3315
-      Touchscreen is designed to plug direction into ESP32 Huzzah module
-    		TFT_CS 	-> pin #15
-    		TFT_DC 	-> pin #33
-    		RT 		-> pin #32
-    		SD		-> pin #14
-    		SCK		-> SCK
-    		MISO	-> MISO
-    		MOSI	-> MOSI
 
 
    LED -> pin 13  (LED integrated on Huzzah module)
@@ -130,7 +107,6 @@ RgbColor black(0);
     The Public API port for the V2 Ark network is '4003'
 */
 
-
 #ifdef NYBBLE
 const char* peer = "159.203.42.124";  //Nybble Testnet Peer
 #else
@@ -141,23 +117,16 @@ int port = 4003;
 
 //Wallet Address on bridgechain
 #ifdef NYBBLE
-const char* ArkAddress = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //NYBBLE testnet address
-char QRcodeArkAddress[] = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //jakeIOT testnet address
-const char* ArkPublicKey = "02060c5793d2d42f11c8b18018c2c1ed5d81ed0ffc0afd0fe8ef5cee2dfbd3b787";       //jakeIOT testnet public key
+const char* ArkAddress = "TYWtGL6m9g3E7QrhuDfNQ7XqHnVEnwLswG";   //NYBBLE testnet address
+const char* ArkPublicKey = "03b2c5ad26d9e5355d72a78dcf44fe27259353196d6c5e93295a0678e4b69a592d";       //jakeIOT testnet public key
 
 //Wallet Address on Ark Devnet
 #else
 const char* ArkAddress = "DFcWwEGwBaYCNb1wxGErGN1TJu8QdQYgCt";   //Ark Devnet address
-char QRcodeArkAddress[] = "DFcWwEGwBaYCNb1wxGErGN1TJu8QdQYgCt";   //Ark Devnet address
 const char* ArkPublicKey = "029b2f577bd7afd878b258d791abfb379a6ea3c9436a73a77ad6a348ad48a5c0b9";       //Ark Devnet public key
-//char *QRcodeArkAddress = "DHy5z5XNKXhxztLDpT88iD2ozR7ab5Sw2w";  //compiler may place this string in a location in memory that cannot be modified
 #endif
 
 char VendorID[64];
-
-//define the payment timeout in ms
-#define PAYMENT_WAIT_TIME 90000
-
 
 
 /**
@@ -187,7 +156,8 @@ const char* vendorField;    //vendor field
 int lastRXpage;             //page number of the last received transaction in wallet
 int searchRXpage;           //page number that is used for wallet search
 
-
+int ARK_mtbs = 4000;      //mean time(in ms) between polling Ark API for new transactions
+long ARKscan_lasttime;   //last time Ark API poll has been done
 
 /********************************************************************************
    Arduino Json Libary - works with Version5.  NOT compatible with Version6
@@ -204,7 +174,6 @@ int searchRXpage;           //page number that is used for wallet search
   I need to do a bit more work in regards to Daylight savings time and the periodic sync time with the NTP service after initial syncronization
 ********************************************************************************/
 #include "time.h"
-//#include <TimeLib.h>    //https://github.com/PaulStoffregen/Time
 int timezone = -6;        //set timezone:  MST
 int dst = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
@@ -216,7 +185,7 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 
 /********************************************************************************
   WiFi Library
-  If using the ESP8266 I believe you will need to #include <ESP8266WiFi.h> instead of WiFi.h
+  If using the ESP8266 you will need to #include <ESP8266WiFi.h> instead of WiFi.h
 ********************************************************************************/
 #include <WiFi.h>
 //--------------------------------------------
@@ -226,12 +195,12 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 //const char* password = "xxxxxxxxxx";
 
 //h
-const char* ssid = "TELUS0183";
-const char* password = "6z5g4hbdxi";
+//const char* ssid = "TELUS0183";
+//const char* password = "6z5g4hbdxi";
 
 //w
-//const char* ssid = "TELUS6428";
-//const char* password = "3mmkgc9gn2";
+const char* ssid = "TELUS6428";
+const char* password = "3mmkgc9gn2";
 
 
 /********************************************************************************
@@ -290,15 +259,6 @@ bool Start = false;
 
 
 
-/********************************************************************************
-  State Machine
-
-********************************************************************************/
-enum VendingMachineStates {DRAW_HOME, WAIT_FOR_USER, WAIT_FOR_PAY, VEND_ITEM};   //The five possible states of the Vending state machine
-VendingMachineStates vmState = DRAW_HOME;   //initialize the starting state.
-
-int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
-long ARKscan_lasttime;   //last time Ark API poll has been done
 
 
 
@@ -307,12 +267,11 @@ long ARKscan_lasttime;   //last time Ark API poll has been done
   Arduino IDE normally does its automagic here and creates all the function prototypes for you.
   We have put functions in other files so we need to manually add some prototypes as the automagic doesn't work correctly
 ********************************************************************************/
-void setup();
-int searchReceivedTransaction(const char *const address, int page, const char* &id, int &amount, const char* &senderAddress, const char* &vendorField );
+//void setup();
+//int searchReceivedTransaction(const char *const address, int page, const char* &id, int &amount, const char* &senderAddress, const char* &vendorField );
 
 //void ConfigureNeoPixels(RgbColor color);
 
-void ArkVendingMachine();
 /********************************************************************************
   End Function Prototypes
 ********************************************************************************/
@@ -324,10 +283,8 @@ void ArkVendingMachine();
   MAIN LOOP
 ********************************************************************************/
 void loop() {
-  //  ArkVendingMachine();
-
   if (millis() > ARKscan_lasttime + ARK_mtbs)  {
-    //check to see if new new transaction has been received in wallet
+    //check to see if new transaction has been received in wallet
     searchRXpage = lastRXpage + 1;
     if ( searchReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, vendorField) ) {
       //a new transaction has been received.
@@ -338,6 +295,7 @@ void loop() {
       Serial.println(id);
       Serial.print("Vendor Field: ");
       Serial.println(vendorField);
+
 
       //check to see if vendorField of new transaction matches commands
       if  (strcmp(vendorField, "led on") == 0) {
@@ -370,26 +328,5 @@ void loop() {
   }
 
 
-
-  /*
-    if (millis() > Bot_lasttime + Bot_mtbs)  {
-
-      timeAPIstart = millis();  //get time that API read started
-
-      int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-
-      timeNow = millis() - timeAPIstart;  //get current time
-      Serial.print("Telegram get update time:");
-      Serial.println(timeNow);
-
-      while (numNewMessages) {
-        Serial.println("got response");
-        handleNewMessages(numNewMessages);
-        numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-      }
-
-      Bot_lasttime = millis();
-    }
-  */
 
 }

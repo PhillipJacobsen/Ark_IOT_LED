@@ -65,6 +65,8 @@ void setupTime() {
 
 
 
+
+
 void ConfigureNeoPixels(RgbColor color) {
   strip.SetPixelColor(0, color);
   strip.SetPixelColor(1, color);
@@ -135,28 +137,8 @@ void setup()
   //  We are now going to find the last transaction received in wallet defined previously in "ArkAddress"
   //  We will start from the oldest received transaction and keep reading transactions one at a time until we have read them all.
   //  Because we read 1 trasactions at a time the page number returned by the API tells us how many transactions there are.
-  //  Every transaction received will toggle the color of "searching wallet: " text between red and white.
-  //  Once we have read all the transactions we will display the total number of transactions in wallet.
-  //
-  //  CursorX = tft.getCursorX();     //get current cursor position
-  //  CursorY = tft.getCursorY();     //get current cursor position
-  //  tft.println("searching wallet: ");
-  //  tft.println(ArkAddress);
 
   lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
-
-  //  tft.setTextColor(ILI9341_WHITE);
-  //  tft.setCursor(CursorX, CursorY);
-  //  tft.println("searching wallet: ");
-  //  tft.println(ArkAddress);
-
-  ////  tft.print("# of transactions in wallet: ");
-  //  tft.println(lastRXpage);          //this is the page number of the last received transaction. This is also the total number of transactions in the wallet
-
-
-  //  setupQRcode();
-
-
 
 
   //--------------------------------------------
@@ -166,11 +148,11 @@ void setup()
   bot.sendMessage("-228362617", "Ark IOT LED is ready for Commands", "");      //Add @RawDataBot to your group chat to find the chat id.
 
 
-  delay(1500);
+//  delay(1500);
 
   Bot_lasttime = millis();  //initialize Telegram Bot Poll timer
   
-  ConfigureNeoPixels(green);
+  ConfigureNeoPixels(red);
  // delay(3000);
 //  esp_deep_sleep_start();
 
