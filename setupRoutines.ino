@@ -92,9 +92,14 @@ void setup()
   while ( !Serial && millis() < 20 );
 
   pinMode(ledPin, OUTPUT); // initialize digital ledPin as an output.
-  delay(10);
-  // digitalWrite(ledPin, HIGH); // initialize pin as off    //esp8266
+
+#ifdef  ESP8266    
+   digitalWrite(ledPin, HIGH); // initialize pin as off    //esp8266
+#endif
+#ifdef  ESP32  
   digitalWrite(ledPin, LOW); // initialize pin as off    //Adafruit HUZZAH32
+#endif
+
 
 
   //--------------------------------------------

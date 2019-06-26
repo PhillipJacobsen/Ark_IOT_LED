@@ -26,6 +26,10 @@
 
 #define ARDUINOJSON_USE_LONG_LONG 1     //required for compatiblity between Telegram Library and ArkCrypto library.
 
+//select your device. Only 1 device should be defined at a time
+#define ESP8266
+//#define ESP32
+
 /********************************************************************************
                Electronic Hardware Requirements and Pin Connections
     ESP32 Adafruit Huzzah
@@ -187,7 +191,15 @@ unsigned long timeAPIstart;  //variable used to measure API access time
   WiFi Library
   If using the ESP8266 you will need to #include <ESP8266WiFi.h> instead of WiFi.h
 ********************************************************************************/
+#ifdef ESP32
 #include <WiFi.h>
+#endif
+
+#ifdef ESP8266
+#include <ESP8266WiFi.h>
+#endif
+
+
 //--------------------------------------------
 //This is your WiFi network parameters that you need to configure
 
