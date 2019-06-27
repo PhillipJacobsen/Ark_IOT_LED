@@ -85,7 +85,7 @@ int ledStatus = 0;
 #include <NeoPixelBus.h>
 #define PixelPin 12        //Neopixel Data Pin  connected to DMA
 #define PixelCount 8       //Length of Neopixel Strand
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin); //default on ESP8266 is to use the D9(GPIO3,RXD0) pin with DMA.
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);       //default on ESP8266 is to use the D9(GPIO3,RXD0) pin with DMA.
 
 #define colorSaturation 128
 RgbColor red(colorSaturation, 0, 0);
@@ -206,13 +206,6 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 //const char* ssid = "xxxxxxxxxx";
 //const char* password = "xxxxxxxxxx";
 
-//h
-//const char* ssid = "TELUS0183";
-//const char* password = "6z5g4hbdxi";
-
-//w
-const char* ssid = "TELUS6428";
-const char* password = "3mmkgc9gn2";
 
 
 /********************************************************************************
